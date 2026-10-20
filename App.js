@@ -79,6 +79,7 @@ export default function App() {
 
   // Pure Web Canvas Logic (Bypasses Safari iframe bugs completely)
   // Pure Web Canvas Logic (Bypasses Safari iframe bugs completely)
+  // Pure Web Canvas Logic (Bypasses Safari iframe bugs completely)
   useEffect(() => {
     if (Platform.OS === 'web' && webCanvasRef.current) {
       const canvas = webCanvasRef.current;
@@ -96,15 +97,16 @@ export default function App() {
         ctx.strokeStyle = '#1E293B';
       };
       
-      setTimeout(resize, 50); // Size perfectly after layout settles
+      setTimeout(resize, 50); 
       
       let isDrawing = false;
       
       const start = (e) => {
         e.preventDefault();
         isDrawing = true;
-        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-        const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+        // Strict check: Use touches if it's a real finger, otherwise fallback to mouse
+        const clientX = (e.touches && e.touches.length > 0) ? e.touches[0].clientX : e.clientX;
+        const clientY = (e.touches && e.touches.length > 0) ? e.touches[0].clientY : e.clientY;
         const rect = canvas.getBoundingClientRect();
         ctx.beginPath();
         ctx.moveTo(clientX - rect.left, clientY - rect.top);
@@ -113,8 +115,8 @@ export default function App() {
       const move = (e) => {
         e.preventDefault();
         if (!isDrawing) return;
-        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-        const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+        const clientX = (e.touches && e.touches.length > 0) ? e.touches[0].clientX : e.clientX;
+        const clientY = (e.touches && e.touches.length > 0) ? e.touches[0].clientY : e.clientY;
         const rect = canvas.getBoundingClientRect();
         ctx.lineTo(clientX - rect.left, clientY - rect.top);
         ctx.stroke();
@@ -125,12 +127,10 @@ export default function App() {
         isDrawing = false;
       };
 
-      // Strict touch event bindings for iPad
       canvas.addEventListener('touchstart', start, { passive: false });
       canvas.addEventListener('touchmove', move, { passive: false });
       canvas.addEventListener('touchend', stop, { passive: false });
       
-      // Strict mouse event bindings for Mac/PC Desktop
       canvas.addEventListener('mousedown', start, { passive: false });
       canvas.addEventListener('mousemove', move, { passive: false });
       canvas.addEventListener('mouseup', stop, { passive: false });
@@ -1341,8 +1341,19 @@ const styles = StyleSheet.create({
   
   animationBox: { height: 160, width: 160, alignSelf: 'center', marginBottom: 15, borderRadius: 12, overflow: 'hidden', borderWidth: 2, borderColor: '#E2E8F0', backgroundColor: '#FEFDF9' },
   punctuationHint: { fontSize: 60, fontWeight: 'bold', color: '#3B82F6', textAlign: 'center', marginBottom: 15 },
-  canvasWrapperSquare: { flex: 1, minHeight: 400, backgroundColor: '#FEFDF9', borderWidth: 3, borderColor: '#CBD5E1', borderRadius: 16, overflow: 'hidden', marginBottom: 15, position: 'relative' },
-  
+  canvasWrapperSquare: { 
+    width: '100%', 
+    aspectRatio: 1, 
+    maxWidth: 500, 
+    alignSelf: 'center',
+    backgroundColor: '#FEFDF9', 
+    borderWidth: 3, 
+    borderColor: '#CBD5E1', 
+    borderRadius: 16, 
+    overflow: 'hidden', 
+    marginBottom: 15 
+  },
+
   subtext: { textAlign: 'center', color: '#64748B', marginBottom: 10, fontStyle: 'italic' },
   modelAnswer: { fontSize: 46, fontWeight: 'bold', color: '#10B981', textAlign: 'center', marginBottom: 10 },
   canvasControls: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 10 },
