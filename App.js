@@ -68,6 +68,7 @@ export default function App() {
   
   const canvasRef = useRef(null);
   const webCanvasRef = useRef(null);
+  const scrollViewRef = useRef(null); // Ref to fix the scroll trapping bug
 
   const [memoryCards, setMemoryCards] = useState([]);
   const [flippedCards, setFlippedCards] = useState([]);
@@ -77,8 +78,13 @@ export default function App() {
     loadData();
   }, []);
 
-  // Pure Web Canvas Logic (Bypasses Safari iframe bugs completely)
-  // Pure Web Canvas Logic (Bypasses Safari iframe bugs completely)
+  // Fix: Auto-scroll to top when moving to a new level or checking an answer
+  useEffect(() => {
+    if (scrollViewRef.current) {
+      scrollViewRef.current.scrollTo({ y: 0, animated: false });
+    }
+  }, [currentLevel, cnWritingIndex, cnShowAnswer]);
+
   // Pure Web Canvas Logic (Bypasses Safari iframe bugs completely)
   useEffect(() => {
     if (Platform.OS === 'web' && webCanvasRef.current) {
@@ -104,7 +110,6 @@ export default function App() {
       const start = (e) => {
         e.preventDefault();
         isDrawing = true;
-        // Strict check: Use touches if it's a real finger, otherwise fallback to mouse
         const clientX = (e.touches && e.touches.length > 0) ? e.touches[0].clientX : e.clientX;
         const clientY = (e.touches && e.touches.length > 0) ? e.touches[0].clientY : e.clientY;
         const rect = canvas.getBoundingClientRect();
@@ -268,7 +273,6 @@ export default function App() {
       );
       saveData(updated);
       
-      // Added alerts so you know it actually worked
       if (Platform.OS === 'web') alert('Success! All stars have been reset for this list.');
       else Alert.alert('Success', 'All stars have been reset for this list.');
     };
@@ -337,7 +341,6 @@ export default function App() {
     Alert.alert('Success!', `Imported ${items.length} dictation items to ${profiles.find(p=>p.id === activeProfileId)?.name}'s desk.`);
   };
 
-  // Simplified Audio Engine: Let OS System default choose voice
   const playAudio = async (text, lang) => {
     Speech.stop();
     try {
@@ -451,7 +454,7 @@ export default function App() {
     }
     
     const engLetters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-    const cnChars = "的一是不了在人有我他这个们中来上大为和国地到以说时要就出会可也你对生能而子那得于着下自之年过发后作里用道行所然家种事成方多经么去法学如都同现当没动面起看定天分还进好小部其些主样理心她本前开但因只从想实";
+    const cnChars = "";
     const pool = isEng ? engLetters : cnChars;
     
     for (let i = 0; i < newGrid.length; i++) {
@@ -480,8 +483,8 @@ export default function App() {
     }
 
     if (levelNum === 1) {
-      const d1 = item.sentence + (isEng ? ' today' : '了');
-      const d2 = (isEng ? 'Yes, ' : '是') + item.sentence;
+      const d1 = item.sentence + (isEng ? ' today' : '');
+      const d2 = (isEng ? 'Yes, ' : '') + item.sentence;
       setLevel1Options([item.sentence, d1, d2].sort(() => Math.random() - 0.5));
     } else if (levelNum === 2) {
       setL2Sentence(tokens);
@@ -526,10 +529,10 @@ export default function App() {
     
     let pool = isEng 
       ? ['a','the','is','are','do','does','he','she','it','to'] 
-      : ['的','了','是','我','你','他','在','這','有','好'];
+      : ['','','','','','','','','',''];
       
     pool = pool.filter(w => w !== correctToken).sort(() => Math.random() - 0.5);
-    if (pool.length < 2) pool = isEng ? ['dog', 'cat'] : ['大', '小']; 
+    if (pool.length < 2) pool = isEng ? ['dog', 'cat'] : ['', '']; 
     
     setL2Options([correctToken, pool[0], pool[1]].sort(() => Math.random() - 0.5));
   };
@@ -981,7 +984,7 @@ export default function App() {
         <div id="character-target"></div>
         <script>
           var writer = HanziWriter.create('character-target', '${targetChar}', {
-            width: 140, height: 140, padding: 5, strokeAnimationSpeed: 0.5, delayBetweenStrokes: 400, strokeColor: '#3B82F6', drawingWidth: 20
+            width: 110, height: 110, padding: 5, strokeAnimationSpeed: 0.5, delayBetweenStrokes: 400, strokeColor: '#3B82F6', drawingWidth: 15
           });
           writer.loopCharacterAnimation();
         </script>
@@ -1164,7 +1167,13 @@ export default function App() {
             )}
           </View>
         ) : (
-          <ScrollView style={styles.screen} contentContainerStyle={{ paddingBottom: 60, flexGrow: 1 }} showsVerticalScrollIndicator={false} scrollEnabled={currentLevel < 4}>
+          <ScrollView 
+            ref={scrollViewRef} 
+            style={styles.screen} 
+            contentContainerStyle={{ paddingBottom: 60, flexGrow: 1 }} 
+            showsVerticalScrollIndicator={false} 
+            scrollEnabled={currentLevel < 4}
+          >
             <View style={styles.topBar}>
               <TouchableOpacity onPress={() => { setSelectedDictation(null); setActiveDeskView('desk'); }}><Text style={styles.backBtnText}> Back</Text></TouchableOpacity>
               {renderProgressTracker()}
@@ -1339,12 +1348,13 @@ const styles = StyleSheet.create({
   cnProgressBoxActive: { borderColor: '#3B82F6', backgroundColor: '#EFF6FF', borderWidth: 3 },
   cnProgressText: { fontSize: 32, fontWeight: 'bold' },
   
-  animationBox: { height: 160, width: 160, alignSelf: 'center', marginBottom: 15, borderRadius: 12, overflow: 'hidden', borderWidth: 2, borderColor: '#E2E8F0', backgroundColor: '#FEFDF9' },
+  animationBox: { height: 120, width: 120, alignSelf: 'center', marginBottom: 10, borderRadius: 12, overflow: 'hidden', borderWidth: 2, borderColor: '#E2E8F0', backgroundColor: '#FEFDF9' },
   punctuationHint: { fontSize: 60, fontWeight: 'bold', color: '#3B82F6', textAlign: 'center', marginBottom: 15 },
   canvasWrapperSquare: { 
     width: '100%', 
     aspectRatio: 1, 
-    maxWidth: 500, 
+    maxWidth: 450, 
+    maxHeight: 450, 
     alignSelf: 'center',
     backgroundColor: '#FEFDF9', 
     borderWidth: 3, 
