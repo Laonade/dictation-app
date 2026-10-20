@@ -78,6 +78,7 @@ export default function App() {
   }, []);
 
   // Pure Web Canvas Logic (Bypasses Safari iframe bugs completely)
+  // Pure Web Canvas Logic (Bypasses Safari iframe bugs completely)
   useEffect(() => {
     if (Platform.OS === 'web' && webCanvasRef.current) {
       const canvas = webCanvasRef.current;
@@ -102,18 +103,20 @@ export default function App() {
       const start = (e) => {
         e.preventDefault();
         isDrawing = true;
-        const touch = e.touches ? e.touches[0] : e;
+        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+        const clientY = e.touches ? e.touches[0].clientY : e.clientY;
         const rect = canvas.getBoundingClientRect();
         ctx.beginPath();
-        ctx.moveTo(touch.clientX - rect.left, touch.clientY - rect.top);
+        ctx.moveTo(clientX - rect.left, clientY - rect.top);
       };
       
       const move = (e) => {
         e.preventDefault();
         if (!isDrawing) return;
-        const touch = e.touches ? e.touches[0] : e;
+        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+        const clientY = e.touches ? e.touches[0].clientY : e.clientY;
         const rect = canvas.getBoundingClientRect();
-        ctx.lineTo(touch.clientX - rect.left, touch.clientY - rect.top);
+        ctx.lineTo(clientX - rect.left, clientY - rect.top);
         ctx.stroke();
       };
       
@@ -122,18 +125,28 @@ export default function App() {
         isDrawing = false;
       };
 
-      // Strict touch event bindings
+      // Strict touch event bindings for iPad
       canvas.addEventListener('touchstart', start, { passive: false });
       canvas.addEventListener('touchmove', move, { passive: false });
       canvas.addEventListener('touchend', stop, { passive: false });
+      
+      // Strict mouse event bindings for Mac/PC Desktop
+      canvas.addEventListener('mousedown', start, { passive: false });
+      canvas.addEventListener('mousemove', move, { passive: false });
+      canvas.addEventListener('mouseup', stop, { passive: false });
+      canvas.addEventListener('mouseout', stop, { passive: false });
 
       return () => {
         canvas.removeEventListener('touchstart', start);
         canvas.removeEventListener('touchmove', move);
         canvas.removeEventListener('touchend', stop);
+        canvas.removeEventListener('mousedown', start);
+        canvas.removeEventListener('mousemove', move);
+        canvas.removeEventListener('mouseup', stop);
+        canvas.removeEventListener('mouseout', stop);
       };
     }
-  }, [currentLevel, cnWritingIndex]); 
+  }, [currentLevel, cnWritingIndex]);
 
   const loadData = async () => {
     try {
@@ -254,6 +267,10 @@ export default function App() {
           : d
       );
       saveData(updated);
+      
+      // Added alerts so you know it actually worked
+      if (Platform.OS === 'web') alert('Success! All stars have been reset for this list.');
+      else Alert.alert('Success', 'All stars have been reset for this list.');
     };
 
     if (Platform.OS === 'web') {
@@ -921,7 +938,9 @@ export default function App() {
           />
           {isCorrect === true && (
              <View style={styles.selfGradeRow}>
-               <TouchableOpacity style={styles.masteredBtn} onPress={markMastered}><Text style={styles.masteredText}>Perfect! Mark as Mastered </Text></TouchableOpacity>
+               <TouchableOpacity style={styles.masteredBtn} onPress={markMastered}>
+                 <Text style={styles.masteredText}>⭐ Perfect! Mark as Mastered </Text>
+               </TouchableOpacity>
              </View>
           )}
           {isCorrect === false && <Text style={styles.errorText}>Not quite! Check your spelling.</Text>}
