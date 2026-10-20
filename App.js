@@ -347,9 +347,12 @@ export default function App() {
       let targetLang = lang;
       if (lang === 'en-GB') targetLang = 'en-US';
 
+      // FIX: iPad/Mac Safari instantly mutes Chinese voices if the rate is not exactly 1.0
+      const isChinese = targetLang.includes('zh');
+
       Speech.speak(text, { 
         language: targetLang, 
-        rate: 0.85, 
+        rate: isChinese ? 1.0 : 0.85, 
         pitch: 1.0 
       });
     } catch (e) {
