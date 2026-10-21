@@ -68,7 +68,7 @@ export default function App() {
   
   const canvasRef = useRef(null);
   const webCanvasRef = useRef(null);
-  const scrollViewRef = useRef(null); // Ref to fix the scroll trapping bug
+  const scrollViewRef = useRef(null);
 
   const [memoryCards, setMemoryCards] = useState([]);
   const [flippedCards, setFlippedCards] = useState([]);
@@ -78,14 +78,14 @@ export default function App() {
     loadData();
   }, []);
 
-  // Fix: Auto-scroll to top when moving to a new level or checking an answer
+  // Auto-scroll to top when level changes
   useEffect(() => {
     if (scrollViewRef.current) {
       scrollViewRef.current.scrollTo({ y: 0, animated: false });
     }
   }, [currentLevel, cnWritingIndex, cnShowAnswer]);
 
-  // Pure Web Canvas Logic (Bypasses Safari iframe bugs completely)
+  // Pure Web Canvas Logic
   useEffect(() => {
     if (Platform.OS === 'web' && webCanvasRef.current) {
       const canvas = webCanvasRef.current;
@@ -347,7 +347,6 @@ export default function App() {
       let targetLang = lang;
       if (lang === 'en-GB') targetLang = 'en-US';
 
-      // FIX: iPad/Mac Safari instantly mutes Chinese voices if the rate is not exactly 1.0
       const isChinese = targetLang.includes('zh');
 
       Speech.speak(text, { 
@@ -457,7 +456,7 @@ export default function App() {
     }
     
     const engLetters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-    const cnChars = "";
+    const cnChars = "的一是在我有和就人不都合這著看好自你會到說要去麼學子們來過心生能";
     const pool = isEng ? engLetters : cnChars;
     
     for (let i = 0; i < newGrid.length; i++) {
@@ -486,8 +485,22 @@ export default function App() {
     }
 
     if (levelNum === 1) {
-      const d1 = item.sentence + (isEng ? ' today' : '');
-      const d2 = (isEng ? 'Yes, ' : '') + item.sentence;
+      const otherItems = dictations
+        .filter(d => d.language === item.language && d.profileId === item.profileId && d.sentence !== item.sentence)
+        .map(d => d.sentence);
+      
+      let d1, d2;
+      if (otherItems.length >= 2) {
+        const shuffled = [...otherItems].sort(() => Math.random() - 0.5);
+        d1 = shuffled[0];
+        d2 = shuffled[1];
+      } else if (otherItems.length === 1) {
+        d1 = otherItems[0];
+        d2 = isEng ? item.sentence + ' today' : item.sentence + '嗎';
+      } else {
+        d1 = isEng ? item.sentence + ' today' : item.sentence + '嗎';
+        d2 = isEng ? 'Yes, ' + item.sentence : '好 ' + item.sentence;
+      }
       setLevel1Options([item.sentence, d1, d2].sort(() => Math.random() - 0.5));
     } else if (levelNum === 2) {
       setL2Sentence(tokens);
@@ -530,12 +543,12 @@ export default function App() {
     const activeMissingIdx = missingIndices[stepIdx];
     const correctToken = tokens[activeMissingIdx];
     
-    let pool = isEng 
-      ? ['a','the','is','are','do','does','he','she','it','to'] 
-      : ['','','','','','','','','',''];
+    const engPool = ['a','the','is','are','do','does','he','she','it','to'];
+    const cnPool = ['的','了','是','在','我','有','和','就','不','人','都','一','個','上','也','很','到','說','要','去','你','會','著','看','好','生','自','這'];
       
+    let pool = isEng ? engPool : cnPool;
     pool = pool.filter(w => w !== correctToken).sort(() => Math.random() - 0.5);
-    if (pool.length < 2) pool = isEng ? ['dog', 'cat'] : ['', '']; 
+    if (pool.length < 2) pool = isEng ? ['dog', 'cat'] : ['好', '看']; 
     
     setL2Options([correctToken, pool[0], pool[1]].sort(() => Math.random() - 0.5));
   };
@@ -627,10 +640,10 @@ export default function App() {
       if (webCanvasRef.current) {
         const canvas = webCanvasRef.current;
         const ctx = canvas.getContext('2d');
-        ctx.clearRect(0, 0, canvas.width, canvas.height); // Clears native canvas
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
       }
     } else {
-      canvasRef.current?.clearSignature(); // Keeps native iPad app working
+      canvasRef.current?.clearSignature();
     }
   };
 
