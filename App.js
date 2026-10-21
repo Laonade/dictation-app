@@ -9,7 +9,7 @@ import SignatureScreen from 'react-native-signature-canvas';
 import { WebView } from 'react-native-webview';
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState('Parent'); 
+  const [activeTab, setActiveTab] = useState('Student'); 
   const [activeDeskView, setActiveDeskView] = useState('desk'); 
   
   // Data States
