@@ -162,8 +162,26 @@ export default function App() {
       if (storedProfiles) setProfiles(JSON.parse(storedProfiles));
       if (storedActive) setActiveProfileId(storedActive);
 
+      let parsed = [];
       if (storedDicts !== null) {
-        const parsed = JSON.parse(storedDicts);
+        parsed = JSON.parse(storedDicts);
+      }
+
+      if (parsed.length === 0) {
+        const demos = [
+          { id: 'en1', sentence: 'The dinosaur plays guitar', focusWords: 'dinosaur, guitar', language: 'en-GB', mastered: false, profileId: '1' },
+          { id: 'en2', sentence: 'elephant', focusWords: '', language: 'en-GB', mastered: false, profileId: '1' },
+          { id: 'en3', sentence: 'She went to the library today', focusWords: 'library', language: 'en-GB', mastered: false, profileId: '1' },
+          { id: 'hk1', sentence: '我們去公園玩', focusWords: '我們, 公園', language: 'zh-HK', mastered: false, profileId: '1' },
+          { id: 'hk2', sentence: '巴士', focusWords: '', language: 'zh-HK', mastered: false, profileId: '1' },
+          { id: 'hk3', sentence: '我喜歡食士多啤梨', focusWords: '喜歡, 士多啤梨', language: 'zh-HK', mastered: false, profileId: '1' },
+          { id: 'cn1', sentence: '很高兴认识你', focusWords: '高兴, 认识', language: 'zh-CN', mastered: false, profileId: '1' },
+          { id: 'cn2', sentence: '熊猫', focusWords: '', language: 'zh-CN', mastered: false, profileId: '1' },
+          { id: 'cn3', sentence: '今天天气很好', focusWords: '今天, 天气', language: 'zh-CN', mastered: false, profileId: '1' }
+        ];
+        setDictations(demos);
+        await AsyncStorage.setItem('gwen_dictations', JSON.stringify(demos));
+      } else {
         setDictations(parsed.map(d => ({ ...d, profileId: d.profileId || '1' })));
       }
     } catch (e) {
@@ -294,18 +312,29 @@ export default function App() {
   const exportList = async () => {
     const list = dictations.filter(d => d.language === parentListLanguage && d.profileId === activeProfileId);
     if (list.length === 0) {
-      Alert.alert('Empty List', 'Add some words to this language first!');
+      if (Platform.OS === 'web') alert('Add some words to this language first!');
+      else Alert.alert('Empty List', 'Add some words to this language first!');
       return;
     }
     
     const formattedItems = list.map(d => d.focusWords ? `${d.sentence}~${d.focusWords}` : d.sentence);
     const code = `${parentListLanguage}|${formattedItems.join('|')}`;
-    try {
-      await Share.share({ 
-        message: `Paste this code in the dictation app to load the list:\n\n${code}` 
-      });
-    } catch (e) { 
-      Alert.alert('Error', 'Could not share list.'); 
+    
+    if (Platform.OS === 'web') {
+      try {
+        await navigator.clipboard.writeText(code);
+        alert('Success! List code copied to your clipboard:\n\n' + code);
+      } catch (e) {
+        alert('Could not copy to clipboard automatically. Please copy this code:\n\n' + code);
+      }
+    } else {
+      try {
+        await Share.share({ 
+          message: `Paste this code in the dictation app to load the list:\n\n${code}` 
+        });
+      } catch (e) { 
+        Alert.alert('Error', 'Could not share list.'); 
+      }
     }
   };
 
@@ -640,10 +669,10 @@ export default function App() {
       if (webCanvasRef.current) {
         const canvas = webCanvasRef.current;
         const ctx = canvas.getContext('2d');
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.clearRect(0, 0, canvas.width, canvas.height); // Clears native canvas
       }
     } else {
-      canvasRef.current?.clearSignature();
+      canvasRef.current?.clearSignature(); // Keeps native iPad app working
     }
   };
 
@@ -722,9 +751,9 @@ export default function App() {
         </View>
       )}
 
-      {/* Share & Import Section */}
+      {/* Export & Import Section */}
       <View style={styles.sectionHeaderRow}>
-        <Text style={[styles.header, {marginBottom: 0, marginTop: 0}]}>Share & Import Lists</Text>
+        <Text style={[styles.header, {marginBottom: 0, marginTop: 0}]}>Export & Import Lists</Text>
         <TouchableOpacity onPress={() => setShowFormatGuide(!showFormatGuide)}>
           <Text style={styles.helpBtnText}>{showFormatGuide ? 'Hide Guide ' : 'Format Guide '}</Text>
         </TouchableOpacity>
@@ -738,8 +767,8 @@ export default function App() {
           <View style={{marginTop: 5}}>
             <Text style={styles.guideCode}>en-GB|library|dinosaur|elephant</Text>
             <Text style={styles.guideCode}>en-GB|The dinosaur plays guitar~dinosaur,guitar</Text>
-            <Text style={styles.guideCode}>zh-HK|||</Text>
-            <Text style={styles.guideCode}>zh-CN|||</Text>
+            <Text style={styles.guideCode}>zh-HK|我們去公園玩~我們,公園|巴士</Text>
+            <Text style={styles.guideCode}>zh-CN|熊猫|今天天气很好~今天</Text>
           </View>
         </View>
       )}
@@ -767,8 +796,8 @@ export default function App() {
       <View style={styles.sectionHeaderRow}>
         <Text style={[styles.header, {marginTop: 0, marginBottom: 0}]}>{activeProfileName}'s Lists</Text>
         <View style={{flexDirection: 'row'}}>
-          <TouchableOpacity style={styles.actionBtnShare} onPress={exportList}><Text style={styles.actionBtnText}>Share </Text></TouchableOpacity>
-          <TouchableOpacity style={styles.actionBtnReset} onPress={resetStars}><Text style={styles.actionBtnText}>Reset </Text></TouchableOpacity>
+          <TouchableOpacity style={styles.actionBtnShare} onPress={exportList}><Text style={styles.actionBtnText}>Export</Text></TouchableOpacity>
+          <TouchableOpacity style={styles.actionBtnReset} onPress={resetStars}><Text style={styles.actionBtnText}>Reset</Text></TouchableOpacity>
         </View>
       </View>
       
