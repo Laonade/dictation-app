@@ -175,7 +175,7 @@ export default function App() {
           { id: 'hk1', sentence: '我們去公園玩', focusWords: '我們, 公園', language: 'zh-HK', mastered: false, profileId: '1' },
           { id: 'hk2', sentence: '巴士', focusWords: '', language: 'zh-HK', mastered: false, profileId: '1' },
           { id: 'hk3', sentence: '我喜歡食士多啤梨', focusWords: '喜歡, 士多啤梨', language: 'zh-HK', mastered: false, profileId: '1' },
-          { id: 'cn1', sentence: '很高兴认识你', focusWords: '高兴, 认识', language: 'zh-CN', mastered: false, profileId: '1' },
+          { id: 'cn1', sentence: '很高興認識你', focusWords: '高興, 認識', language: 'zh-CN', mastered: false, profileId: '1' },
           { id: 'cn2', sentence: '熊猫', focusWords: '', language: 'zh-CN', mastered: false, profileId: '1' },
           { id: 'cn3', sentence: '今天天气很好', focusWords: '今天, 天气', language: 'zh-CN', mastered: false, profileId: '1' }
         ];
