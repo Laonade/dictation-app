@@ -371,28 +371,49 @@ export default function App() {
   };
 
  const playAudio = async (text, lang) => {
+    // 1. Stop Expo Speech and Native Web Speech
     Speech.stop();
+    if (Platform.OS === 'web' && window.speechSynthesis) {
+      window.speechSynthesis.cancel();
+    }
     
-    // Tiny delay prevents iPad Safari's audio engine from locking up after stop()
     setTimeout(() => {
       try {
         let targetLang = lang;
         if (lang === 'en-GB') targetLang = 'en-US';
-        
-        // Apple's zh-CN voice crashes on Traditional characters. 
-        // zh-TW forces the iPad to successfully read Traditional text in Mandarin.
-        if (lang === 'zh-CN') targetLang = 'zh-TW';
+        if (lang === 'zh-CN') targetLang = 'zh-TW'; 
 
         const isChinese = targetLang.includes('zh');
 
-        // iPad strictly prefers rate/pitch to be completely omitted for Asian languages
-        const options = { language: targetLang };
-        if (!isChinese) {
-          options.rate = 0.85;
-          options.pitch = 1.0;
-        }
+        // NATIVE WEB BYPASS FOR IPAD SAFARI
+        if (Platform.OS === 'web' && window.speechSynthesis) {
+          const utterance = new SpeechSynthesisUtterance(text);
+          utterance.lang = targetLang;
+          utterance.rate = isChinese ? 1.0 : 0.85;
 
-        Speech.speak(text, options);
+          // Force iPad to explicitly bind to a matching Chinese voice profile
+          const voices = window.speechSynthesis.getVoices();
+          if (voices.length > 0) {
+            let voice = voices.find(v => v.lang.includes(targetLang) || v.lang.includes(targetLang.replace('-', '_')));
+            
+            // Extreme iPad fallback: if exact tag is missing, grab ANY voice for that region
+            if (!voice && targetLang.includes('HK')) voice = voices.find(v => v.lang.includes('HK'));
+            if (!voice && targetLang.includes('TW')) voice = voices.find(v => v.lang.includes('TW') || v.lang.includes('CN'));
+
+            if (voice) utterance.voice = voice;
+          }
+
+          window.speechSynthesis.speak(utterance);
+        } 
+        // NATIVE APP FALLBACK
+        else {
+          const options = { language: targetLang };
+          if (!isChinese) {
+            options.rate = 0.85;
+            options.pitch = 1.0;
+          }
+          Speech.speak(text, options);
+        }
       } catch (e) {
         console.log("Audio error: ", e);
       }
