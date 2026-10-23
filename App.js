@@ -370,22 +370,33 @@ export default function App() {
     Alert.alert('Success!', `Imported ${items.length} dictation items to ${profiles.find(p=>p.id === activeProfileId)?.name}'s desk.`);
   };
 
-  const playAudio = async (text, lang) => {
+ const playAudio = async (text, lang) => {
     Speech.stop();
-    try {
-      let targetLang = lang;
-      if (lang === 'en-GB') targetLang = 'en-US';
+    
+    // Tiny delay prevents iPad Safari's audio engine from locking up after stop()
+    setTimeout(() => {
+      try {
+        let targetLang = lang;
+        if (lang === 'en-GB') targetLang = 'en-US';
+        
+        // Apple's zh-CN voice crashes on Traditional characters. 
+        // zh-TW forces the iPad to successfully read Traditional text in Mandarin.
+        if (lang === 'zh-CN') targetLang = 'zh-TW';
 
-      const isChinese = targetLang.includes('zh');
+        const isChinese = targetLang.includes('zh');
 
-      Speech.speak(text, { 
-        language: targetLang, 
-        rate: isChinese ? 1.0 : 0.85, 
-        pitch: 1.0 
-      });
-    } catch (e) {
-      console.log("Audio error: ", e);
-    }
+        // iPad strictly prefers rate/pitch to be completely omitted for Asian languages
+        const options = { language: targetLang };
+        if (!isChinese) {
+          options.rate = 0.85;
+          options.pitch = 1.0;
+        }
+
+        Speech.speak(text, options);
+      } catch (e) {
+        console.log("Audio error: ", e);
+      }
+    }, 50);
   };
 
   const playSuccessSound = () => {
